@@ -17,3 +17,17 @@ C_M_COEFF = 0.000791;       % [-] Constante empirique du coefficient de Magnus
 % --- Vecteurs utiles ---
 G_VECTEUR = [0, 0, -G];     % [m/s^2] Vecteur de l'accélération gravitationnelle
 
+
+
+function IsCollisionBoisee = est_dans_region_boisee(x, y)
+    L_VERT_HAUTEUR = 150;   % hauteur de la bande verticale gauche
+    L_VERT_LARGEUR = 30;    % largeur  de la bande verticale gauche
+    L_HOR_LONGUEUR = 150;  % longueur de la bande horizontale haute
+    L_HOR_LARGEUR = 20;    % largeur  de la bande horizontale haute
+    
+    dansPartieVerticale = (x>=0) & (y>=0) & (x <= L_VERT_LARGEUR) & (y<= L_VERT_HAUTEUR);
+    dansPartieHorizontale = (x>=0) & (y>=L_VERT_HAUTEUR - L_HOR_LARGEUR) & (x<= L_HOR_LONGUEUR) & (y <= L_VERT_HAUTEUR);
+
+    IsCollisionBoisee = ~(dansPartieVerticale | dansPartieHorizontale);
+end 
+
