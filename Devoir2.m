@@ -19,7 +19,7 @@ G_VECTEUR = [0, 0, -G];     % [m/s^2] Vecteur de l'accélération gravitationnel
 
 
 
-function IsCollisionBoisee = est_dans_region_boisee(x, y)
+function isCollisionBoisee = est_dans_region_boisee(x, y)
     L_VERT_HAUTEUR = 150;   % hauteur de la bande verticale gauche
     L_VERT_LARGEUR = 30;    % largeur  de la bande verticale gauche
     L_HOR_LONGUEUR = 150;  % longueur de la bande horizontale haute
@@ -28,6 +28,14 @@ function IsCollisionBoisee = est_dans_region_boisee(x, y)
     dansPartieVerticale = (x>=0) & (y>=0) & (x <= L_VERT_LARGEUR) & (y<= L_VERT_HAUTEUR);
     dansPartieHorizontale = (x>=0) & (y>=L_VERT_HAUTEUR - L_HOR_LARGEUR) & (x<= L_HOR_LONGUEUR) & (y <= L_VERT_HAUTEUR);
 
-    IsCollisionBoisee = ~(dansPartieVerticale | dansPartieHorizontale);
+    isCollisionBoisee = ~(dansPartieVerticale | dansPartieHorizontale);
 end 
+
+function isDansCoupe = est_dans_coupe(x, y, z)
+    R_COUPE = 5.4e-2;
+    X_COUPE = 150 - 8;
+    Y_COUPE = 130 + 8;
+    distance_centre = hypot(x - X_COUPE, y - Y_COUPE);
+    isDansCoupe = (z <= 0) & (distance_centre <= R_COUPE);
+end
 
