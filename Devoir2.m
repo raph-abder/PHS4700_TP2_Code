@@ -42,12 +42,14 @@ end
 
 function Fg = force_gravite(M) %Prends la masse
     % Poids : Fg = m * g
+
     Fg = M * G_VECTEUR; % [N]
 end
 
 function Fv = force_visqueuse(v) % prends un vecteur v : [vx; vy; vz] (m/s)
 % Frottement visqueux : Fv = - 1/2 * rho * C_V * A * |v| * v
     vnorm = norm(v);
+
     Fv = -0.5 * RHO * C_V * A * vnorm * v; % [N]
 end
 
@@ -62,7 +64,25 @@ function FM = force_magnus(v, wb, C) % où v : vitesse [3x1], wb : vitesse angul
     FM = 0.5 * C.RHO * CM * C.A * v2 * (wxc / nx);   % [N]
 end
 
+function a = acc_gravite(q, C)
+    % F = m g
+    a = force_gravite(M_B);
+end
 
+function a = acc_gravite_visqueux(q, C)
+    v = q(4:6);
+    Fg = force_gravite(M_B);
+    Fv = force_visqueuse(v, C);
+    a = (Fg + Fv) / M_B;
+end
+
+function a = acc_gravite_visqueux_magnus(q, C, WB)
+    v = q(4:6);
+    Fg = force_gravite(M_B);
+    Fv = force_visqueuse(v, C);
+    Fm = force_magnus(v, WB, C);
+    a = (Fg + Fv + Fm) / M_B;
+end
 
 
 % FONCTION DU DEVOIR 
