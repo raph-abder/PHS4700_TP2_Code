@@ -35,7 +35,49 @@ function isDansCoupe = est_dans_coupe(x, y, z)
     R_COUPE = 5.4e-2;
     X_COUPE = 150 - 8;
     Y_COUPE = 130 + 8;
+
     distance_centre = hypot(x - X_COUPE, y - Y_COUPE);
     isDansCoupe = (z <= 0) & (distance_centre <= R_COUPE);
 end
 
+function Fg = force_gravite(M) %Prends la masse
+    % Poids : Fg = m * g
+    Fg = M * G_VECTEUR; % [N]
+end
+
+function Fv = force_visqueuse(v) % prends un vecteur v : [vx; vy; vz] (m/s)
+% Frottement visqueux : Fv = - 1/2 * rho * C_V * A * |v| * v
+    vnorm = norm(v);
+    Fv = -0.5 * RHO * C_V * A * vnorm * v; % [N]
+end
+
+function FM = force_magnus(v, wb, C) % où v : vitesse [3x1], wb : vitesse angulaire [3x1]
+% FM = 1/2 * rho * C_M(|ω|) * A * |v|^2 * ( (ω x v) / |ω x v| )
+% où C_M(|ω|) = C_M_COEFF * |ω|
+    CM   = C_M_COEFF * norm(wb);
+    v2   = norm(v)^2;
+    wxc  = cross(wb, v);
+    nx   = norm(wxc);
+
+    FM = 0.5 * C.RHO * CM * C.A * v2 * (wxc / nx);   % [N]
+end
+
+
+
+
+% FONCTION DU DEVOIR 
+function [coup vbf t x y z]= Devoir2 (option,xy0,vb0,wb0)
+
+    % ==== SWITCH: choix du membre de droite dq/dt = g(q,t) ====
+    switch option
+        case 1   % gravité seule
+
+        case 2   % gravité + frottement visqueux
+
+        case 3   % gravité + visqueux + Magnus
+
+        otherwise
+            error('option doit être 1, 2 ou 3');
+    end
+
+end
