@@ -1,103 +1,96 @@
+function C = constantes()
+    % Constantes physiques
+    C.M_B     = 45.9e-3;        % [kg]  masse balle
+    C.R_B     = 21.35e-3;       % [m]   rayon balle
+    C.R_COUPE = 5.4e-2;         % [m]   rayon coupe
+    C.G       = 9.8;            % [m/s^2]
+    C.RHO     = 1.2;            % [kg/m^3]
+    C.C_V     = 0.14;           % [-]   coeff frottement visqueux
+    C.V0_MAX  = 100;            % [m/s] vitesse initiale max
 
-% --- Constantes physiques ---
-M_B = 45.9e-3;              % [kg]  Masse de la balle de golf (45.9 g)
-R_B = 21.35e-3;             % [m]   Rayon de la balle de golf (21.35 mm)
-R_COUPE = 5.4e-2;           % [m]   Rayon de la coupe (trou) (5.4 cm)
-G = 9.8;                    % [m/s^2] Accélération gravitationnelle
-RHO = 1.2;                  % [kg/m^3] Masse volumique de l'air
-C_V = 0.14;                 % [-]  Coefficient de frottement visqueux
-V0_MAX = 100;               % [m/s] Vitesse initiale maximale permise
+    % Constantes dérivées
+    C.A          = pi * C.R_B^2;      % [m^2] aire
+    C.G_VECTEUR  = [0; 0; -C.G];      % [m/s^2]
 
-% --- Constantes dérivées ---
-A = pi * R_B^2;             % [m^2] Aire effective de la balle
+    % Magnus
+    C.C_M_COEFF  = 0.000791;          % [-]    coeff empirique Magnus
 
-% --- Coefficient du phénomène de Magnus ---
-C_M_COEFF = 0.000791;       % [-] Constante empirique du coefficient de Magnus
+    % Position de la coupe (ex. depuis ton code)
+    C.X_COUPE = 150 - 8;              % [m]
+    C.Y_COUPE = 130 + 8;              % [m]
 
-% --- Vecteurs utiles ---
-G_VECTEUR = [0, 0, -G];     % [m/s^2] Vecteur de l'accélération gravitationnelle
+    %  Région boisée (ex. depuis ton code)
+    C.L_VERT_HAUTEUR = 150;
+    C.L_VERT_LARGEUR = 30;
+    C.L_HOR_LONGUEUR = 150;
+    C.L_HOR_LARGEUR  = 20;
+end
 
 
-
-function isCollisionBoisee = est_dans_region_boisee(x, y)
-    L_VERT_HAUTEUR = 150;   % hauteur de la bande verticale gauche
-    L_VERT_LARGEUR = 30;    % largeur  de la bande verticale gauche
-    L_HOR_LONGUEUR = 150;  % longueur de la bande horizontale haute
-    L_HOR_LARGEUR = 20;    % largeur  de la bande horizontale haute
-    
-    dansPartieVerticale = (x>=0) & (y>=0) & (x <= L_VERT_LARGEUR) & (y<= L_VERT_HAUTEUR);
-    dansPartieHorizontale = (x>=0) & (y>=L_VERT_HAUTEUR - L_HOR_LARGEUR) & (x<= L_HOR_LONGUEUR) & (y <= L_VERT_HAUTEUR);
-
+function isCollisionBoisee = est_dans_region_boisee(C, x, y)
+    dansPartieVerticale = (x>=0) & (y>=0) & (x <= C.L_VERT_LARGEUR) & (y<= C.L_VERT_HAUTEUR);
+    dansPartieHorizontale = (x>=0) & (y>= C.L_VERT_HAUTEUR - C.L_HOR_LARGEUR) & (x<= C.L_HOR_LONGUEUR) & (y <= C.L_VERT_HAUTEUR);
     isCollisionBoisee = ~(dansPartieVerticale | dansPartieHorizontale);
 end 
 
-function isDansCoupe = est_dans_coupe(x, y, z)
-    R_COUPE = 5.4e-2;
-    X_COUPE = 150 - 8;
-    Y_COUPE = 130 + 8;
-
-    distance_centre = hypot(x - X_COUPE, y - Y_COUPE);
-    isDansCoupe = (z <= 0) & (distance_centre <= R_COUPE);
+function isDansCoupe = est_dans_coupe(C, x, y, z)
+    distance_centre = hypot(x - C.X_COUPE, y - C.Y_COUPE);
+    isDansCoupe = (z <= 0) & (distance_centre <= C.R_COUPE);
 end
 
-function Fg = force_gravite(M) %Prends la masse
-    % Poids : Fg = m * g
-
-    Fg = M * G_VECTEUR; % [N]
+function Fg = force_gravite(C, M) %Prends la masse
+    Fg = M * C.G_VECTEUR; % [N]
 end
 
-function Fv = force_visqueuse(v) % prends un vecteur v : [vx; vy; vz] (m/s)
-% Frottement visqueux : Fv = - 1/2 * rho * C_V * A * |v| * v
-    vnorm = norm(v);
-
-    Fv = -0.5 * RHO * C_V * A * vnorm * v; % [N]
+function Fv = force_visqueuse(C, V)
+    % Frottement visqueux : Fv = - 1/2 * rho * C_V * A * |v| * v
+    vnorm = norm(V);
+    Fv = -(1/2) * C.RHO * C_V * A * vnorm * V; % [N]
 end
 
-function FM = force_magnus(v, wb, C) % où v : vitesse [3x1], wb : vitesse angulaire [3x1]
+function FM = force_magnus(C, V, wb)
 % FM = 1/2 * rho * C_M(|ω|) * A * |v|^2 * ( (ω x v) / |ω x v| )
-% où C_M(|ω|) = C_M_COEFF * |ω|
-    CM   = C_M_COEFF * norm(wb);
-    v2   = norm(v)^2;
-    wxc  = cross(wb, v);
+% où C_M(|ω|) = C.C_M_COEFF * |ω|
+    CM   = C.C_M_COEFF * norm(wb);
+    V2   = norm(V)^2;
+    wxc  = cross(wb, V);
     nx   = norm(wxc);
-
-    FM = 0.5 * C.RHO * CM * C.A * v2 * (wxc / nx);   % [N]
+    FM = 0.5 * C.RHO * CM * C.A * V2 * (wxc / nx);   % [N]
 end
 
-function a = acc_gravite(q, C)
-    % F = m g
-    a = force_gravite(M_B);
+
+function a = acc_gravite_visqueux(C, V)
+    Fg = force_gravite(C.M_B);
+    Fv = force_visqueuse(V, C);
+    a = (Fg + Fv) / C.M_B;
 end
 
-function a = acc_gravite_visqueux(q, C)
-    v = q(4:6);
-    Fg = force_gravite(M_B);
-    Fv = force_visqueuse(v, C);
-    a = (Fg + Fv) / M_B;
+function a = acc_gravite_visqueux_magnus(C,WB,V)
+    Fg = force_gravite(C.M_B);
+    Fv = force_visqueuse(V, C);
+    Fm = force_magnus(V, WB, C);
+    a = (Fg + Fv + Fm) / C.M_B;
 end
 
-function a = acc_gravite_visqueux_magnus(q, C, WB)
-    v = q(4:6);
-    Fg = force_gravite(M_B);
-    Fv = force_visqueuse(v, C);
-    Fm = force_magnus(v, WB, C);
-    a = (Fg + Fv + Fm) / M_B;
+
+function a = accelerationSelonOption(C,option)
+    switch option
+        case 1
+            a = C.G_VECTEUR
+        case 2   % gravité + frottement visqueux
+            a = acc_gravite_visqueux(C,vb0)
+        case 3   % gravité + visqueux + Magnus
+            a = acc_gravite_visqueux_magnus(C,wb0,vb0)
+        otherwise
+            error('option doit être 1, 2 ou 3');
+    end
 end
 
 
 % FONCTION DU DEVOIR 
 function [coup vbf t x y z]= Devoir2 (option,xy0,vb0,wb0)
 
-    % ==== SWITCH: choix du membre de droite dq/dt = g(q,t) ====
-    switch option
-        case 1   % gravité seule
-
-        case 2   % gravité + frottement visqueux
-
-        case 3   % gravité + visqueux + Magnus
-
-        otherwise
-            error('option doit être 1, 2 ou 3');
-    end
+    C = constantes();
+    a = accelerationSelonOption(C, option)
 
 end
