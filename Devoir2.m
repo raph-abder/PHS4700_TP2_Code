@@ -22,6 +22,12 @@
     y = zeros(max_steps, 1);
     z = zeros(max_steps, 1);
 
+    % Initialiser la première ligne des vecteurs
+    t(idx) = t_cur;
+    x(idx) = q(4);
+    y(idx) = q(5);
+    z(idx) = q(6);
+
     espilone  =[100; 100; 100; 1e-3; 1e-3; 1e-3];
 
     params = {C, option, wb0};   
