@@ -1,3 +1,4 @@
+% FONCTION DU DEVOIR
     function [coup, vbf, t, x, y, z]= Devoir2 (option,xy0,vb0,wb0)
 
     if norm(vb0) >= 100
