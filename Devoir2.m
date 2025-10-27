@@ -9,13 +9,12 @@
     fprintf('Temps interval de : %f \n', C.T_interval)
 
     % initialisation de l'etat q et la vitesse angulaire
-    q0 = [vb0(1); vb0(2); vb0(3); xy0(1) ; xy0(2); 0];
+    q0 = [vb0(1); vb0(2); vb0(3); xy0(1) ; xy0(2); C.R_B];
     wb0 = wb0(:);
     q = q0;
 
     idx = 1;
     t_cur = C.t_debut;
-
 
     % allouer l'espace memoire necessaire
     max_steps = round(C.t_max / C.T_interval) + 1;
@@ -33,6 +32,9 @@
     % regrouper les parametres
     params = {C, option, wb0};
 
+    q_precedent = q;
+    t_precedent = t_cur;
+
     while true
         % verifie si le temps c'est ecoule
         if t_cur >= C.t_max
@@ -42,7 +44,6 @@
 
         % resolution d'equation differentiel avec RK4
         qs = SEDRK4t0(q, t_cur, C.T_interval, @derive_q, params);
-        q = qs;
 
         % mise a jour du temps
         t_cur = t_cur + C.T_interval;
@@ -50,23 +51,44 @@
 
         % mettre les elements necessaire en memoire
         t(idx) = t_cur;
-        x(idx) = q(4);
-        y(idx) = q(5);
-        z(idx) = q(6);
+        x(idx) = qs(4);
+        y(idx) = qs(5);
+        z(idx) = qs(6);
 
 
         % verifier la position
-        if q(6) <= 0
+        if qs(6) <= C.R_B
+
+            [t_impact, x_impact, y_impact, vbf_impact] = ...
+                interpoler_impact(q_precedent, qs, t_precedent, t_cur, C.R_B);
+
+
+            q = [vbf_impact(1); vbf_impact(2); vbf_impact(3);
+                 x_impact; y_impact; C.R_B];
+
+
+            % redefinir pour garder l'impact en fait
+            x(idx) = q(4);
+            y(idx) = q(5);
+            z(idx) = q(6);
+            t(idx) = t_impact ;
+
+
             if est_dans_coupe(C, q(4), q(5), q(6))
                 coup = 0;
             else
                 coup = 1;
             end
             break
-        elseif est_dans_region_boisee(C, q(4), q(5))
+        elseif est_dans_region_boisee(C, qs(4), qs(5))
             coup = 2;
+            q = qs;
             break
         end
+
+        q_precedent = q;
+        t_precedent = t_cur - C.T_interval;
+        q = qs;
     end
 
     % mettre les elements finaux en memoire
@@ -97,14 +119,14 @@ function C = constantes()
 
     % Position de la coupe (ex. depuis ton code)
     C.X_COUPE = 150 - 8;
-    C.Y_COUPE = 130 + 8;
+    C.Y_COUPE = 150 - 8;
 
     %  Région boisée (ex. depuis ton code)
     C.L_VERT_HAUTEUR = 150;
     C.L_VERT_LARGEUR = 30;
     C.L_HOR_LONGUEUR = 150;
     C.L_HOR_LARGEUR  = 20;
-    C.T_interval = 0.01;
+    C.T_interval = 0.0001;
     C.t_max = 100;
     C.t_debut = 0;
 end
@@ -119,7 +141,7 @@ end
 
 function isDansCoupe = est_dans_coupe(C, x, y, z)
     distance_centre = hypot(x - C.X_COUPE, y - C.Y_COUPE);
-    isDansCoupe = (z <= 0) & (distance_centre <= C.R_COUPE);
+    isDansCoupe = (z <= C.R_B) & (distance_centre <= C.R_COUPE);
 end
 
 
@@ -204,6 +226,31 @@ function q_derive = derive_q(q0, t, params)
     q_derive = [a(1); a(2); a(3); q0(1); q0(2); q0(3)];
 end
 
+function [t_impact, x_impact, y_impact, vbf_impact] = interpoler_impact(q_avant, q_apres, t_avant, t_apres, z_sol)
+
+    z_avant = q_avant(6);
+    z_apres = q_apres(6);
+
+    % Vérification que l'impact a bien eu lieu
+    if z_avant <= z_sol || z_apres >= z_sol
+        error('Pas d''impact détecté entre les deux états fournis');
+    end
+
+    % Interpolation linéaire pour trouver le temps exact où z = 0
+    taux = (z_sol - z_avant) / (z_apres - z_avant);
+    t_impact = t_avant + taux * (t_apres - t_avant);
+
+    % Interpolation linéaire de la position
+    x_impact = q_avant(4) + taux * (q_apres(4) - q_avant(4));
+    y_impact = q_avant(5) + taux * (q_apres(5) - q_avant(5));
+
+    % Interpolation linéaire de la vitesse
+    vx_impact = q_avant(1) + taux * (q_apres(1) - q_avant(1));
+    vy_impact = q_avant(2) + taux * (q_apres(2) - q_avant(2));
+    vz_impact = q_avant(3) + taux * (q_apres(3) - q_avant(3));
+
+    vbf_impact = [vx_impact; vy_impact; vz_impact];
+end
 
 
 
