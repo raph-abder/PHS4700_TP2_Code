@@ -1,5 +1,4 @@
     function [coup, vbf, t, x, y, z]= Devoir2 (option,xy0,vb0,wb0)
-    % verifie la norme
     if norm(vb0) >= 100
         error('La norme de vb0 (%.2f m/s) dépasse la limite de 100 m/s.', norm(vb0));
     end
