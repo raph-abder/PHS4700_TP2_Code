@@ -116,16 +116,16 @@ function C = constantes()
 
     C.C_M_COEFF  = 0.000791;          % coeff empirique Magnus
 
-    % Position de la coupe (ex. depuis ton code)
+    % Position de la coupe
     C.X_COUPE = 150 - 8;
     C.Y_COUPE = 150 - 8;
 
-    %  Région boisée (ex. depuis ton code)
+    %  Région boisée
     C.L_VERT_HAUTEUR = 150;
     C.L_VERT_LARGEUR = 30;
     C.L_HOR_LONGUEUR = 150;
     C.L_HOR_LARGEUR  = 20;
-    C.T_interval = 0.0001;
+    C.T_interval = 0.00001;
     C.t_max = 100;
     C.t_debut = 0;
 end
